@@ -57,8 +57,8 @@ O vídeo é o MP4 original recuperado do site antigo. A capa usa a fachada enqua
 
 Fotos do Instagram são registros reais usados para a prévia; não representam os três últimos posts. Avaliações são recortes de consulta pública com fonte e data de prévia. **Instagram e Google ainda não atualizam automaticamente** sem conectar os provedores. Ver `docs/INTEGRACOES.md`.
 
-O portfólio resumido, as fotografias e os contatos precisam de revisão pela Unida. FLEXCERT e o feed de notícias foram excluídos. Não há formulário que simule envio. WhatsApp, telefone, e-mail, rota e Onvio são links reais e podem abrir serviços externos.
+O portfólio resumido, as fotografias e os contatos precisam de revisão pela Unida. FLEXCERT e o feed de notícias foram excluídos. O formulário da inicial e de Contato prepara a mensagem para abrir no WhatsApp; o visitante confirma o envio no serviço. Não há backend de e-mail, armazenamento de contatos ou envio automático. WhatsApp, telefone, e-mail, rota e Onvio são links reais e podem abrir serviços externos.
 
 ## Motion
 
-Fachada panorâmica com degradê, entrada coordenada do título, foto e ações. A rolagem move a foto com amplitude curta e revela grupos de conteúdo. No celular, as entradas têm deslocamento e duração próprios; a narrativa possui indicador compacto de etapa fixo durante sua seção. Rolagem nativa, sem reprodução automática de vídeo e sem animações em loop. Movimentos ativos por padrão conforme a direção aprovada, sem botão no rodapé e sem depender da preferência antiga salva no navegador.
+Fachada panorâmica com degradê, entrada coordenada do título, foto e ações. A rolagem move a foto com amplitude curta e revela grupos de conteúdo. No celular, as entradas têm deslocamento e duração próprios; a narrativa possui indicador compacto de etapa fixo durante sua seção. Rolagem nativa; o fundo da primeira tela usa um trecho curto e otimizado em vídeo, sem som, com controle de pausa e imagem alternativa. O vídeo completo permanece sob ação do visitante. Movimentos ativos por padrão conforme a direção aprovada, sem botão no rodapé e sem depender da preferência antiga salva no navegador.

@@ -3,7 +3,7 @@
 ## Implementado
 
 - Conteúdo completo e links em HTML, sem depender de renderização cliente.
-- Poppins, layout responsivo, um H1 por página, títulos e descrições únicos.
+- Poppins, layout responsivo, um H1 por página, descrições próprias e título da marca solicitado pelo cliente: Unida Contabilidade e Soluções.
 - Canonical absoluto, Open Graph, Twitter Card e idioma pt-BR.
 - Dados estruturados AccountingService, WebSite, WebPage/ContactPage/AboutPage e BreadcrumbList. Sem estrelas de avaliações próprias, números inventados ou horários não confirmados.
 - Sitemap das páginas institucionais; robots e meta robots controlados por configuração e ambiente.

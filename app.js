@@ -285,5 +285,25 @@
       }
     } catch { /* A failed integration must not block navigation or masquerade as live data. */ }
   }
+  document.addEventListener('unida:contact-form', () => track('contact_form_whatsapp', { location: document.body.dataset.page }));
   socialData('instagram'); socialData('reviews');
+})();
+
+(() => {
+ const video=document.querySelector('#hero-background-video');
+ const button=document.querySelector('.hero-video-toggle');
+ const photo=document.querySelector('.hero-photo');
+ const hero=document.querySelector('.hero-panorama');
+ if(!video||!button)return;
+ let userPaused=false,inView=true;
+ video.muted=true;
+ const label=()=>{const paused=video.paused;button.querySelector('[data-video-label]').textContent=paused?'Reproduzir vídeo':'Pausar vídeo';button.firstElementChild.textContent=paused?'▶':'Ⅱ';button.setAttribute('aria-label',paused?'Reproduzir vídeo de fundo':'Pausar vídeo de fundo');};
+ const play=()=>video.play().catch(label);
+ video.addEventListener('playing',()=>{photo.classList.add('video-ready');label();});
+ video.addEventListener('pause',label);
+ video.addEventListener('error',()=>{photo.classList.remove('video-ready');label();});
+ button.addEventListener('click',()=>{if(video.paused){userPaused=false;play();}else{userPaused=true;video.pause();}});
+ if('IntersectionObserver' in window)new IntersectionObserver(entries=>{inView=entries[0].isIntersecting;if(!inView)video.pause();else if(!userPaused&&!document.hidden)play();},{threshold:.01}).observe(hero);
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)video.pause();else if(inView&&!userPaused)play();});
+ play();
 })();
