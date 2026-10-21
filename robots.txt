@@ -1,0 +1,4 @@
+# Controle de indexação em site.config.json
+User-agent: *
+Disallow: /
+Sitemap: https://unidasolucoes.com.br/sitemap.xml
