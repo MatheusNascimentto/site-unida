@@ -247,7 +247,7 @@
   $$('[data-consent-reset]').forEach(button => { button.hidden = !validGA; button.addEventListener('click',() => consentPrompt(true)); });
   const settings = $('[data-analytics-settings]'); if (settings) settings.hidden = !validGA;
   const info = $('[data-analytics-info]');
-  if (info) info.textContent = validGA ? 'A análise de navegação é opcional. Você pode permitir ou recusar o uso do Google Analytics sem perder o acesso ao site.' : 'A análise de navegação está desativada neste site. Você pode acessar as páginas e os contatos sem autorizar cookies opcionais.';
+  if (info) info.textContent = validGA ? 'A análise de navegação é opcional. Você pode permitir ou recusar o uso do Google Analytics sem perder o acesso ao site.' : 'Não usamos cookies de publicidade nem análise de navegação. Nenhuma autorização de cookies opcionais é solicitada nesta configuração.';
 
   document.addEventListener('click', event => {
     const link = event.target.closest('a[href]'); if (!link) return;
@@ -304,7 +304,7 @@
       if (cards.length) {
         root.replaceChildren(...cards);
         const status = $(source === 'instagram' ? '[data-instagram-status]' : '[data-review-status]');
-        if (status) status.textContent = source === 'instagram' ? 'Publicações mais recentes recebidas pela integração.' : 'Comentários com texto, ordenados pela data de publicação. Fonte: Google Maps.';
+        if (status) { status.hidden = false; status.textContent = source === 'instagram' ? 'Publicações mais recentes recebidas pela integração.' : 'Comentários com texto, ordenados pela data de publicação. Fonte: Google Maps.'; }
         if (source === 'reviews' && Number.isFinite(data.averageRating) && Number.isInteger(data.totalReviewCount)) {
           const score = $('.review-score'); if (score) { $('strong', score).textContent = data.averageRating.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); score.lastElementChild.textContent = `${data.totalReviewCount} avaliações`; const stars = $('.stars', score); stars.textContent = '★'.repeat(Math.round(data.averageRating)); stars.setAttribute('aria-label', `${data.averageRating} de 5 estrelas`); }
         }
@@ -320,16 +320,47 @@
  const button=document.querySelector('.hero-video-toggle');
  const photo=document.querySelector('.hero-photo');
  const hero=document.querySelector('.hero-panorama');
- if(!video||!button)return;
- let userPaused=false,inView=true;
+ if(!video||!button||!hero)return;
+ let userPaused=false,inView=true,pendingPlay=null;
+ video.defaultMuted=true;
  video.muted=true;
- const label=()=>{const paused=video.paused;button.querySelector('[data-video-label]').textContent=paused?'Reproduzir vídeo':'Pausar vídeo';button.firstElementChild.textContent=paused?'▶':'Ⅱ';button.setAttribute('aria-label',paused?'Reproduzir vídeo de fundo':'Pausar vídeo de fundo');button.title=paused?'Reproduzir vídeo':'Pausar vídeo';};
- const play=()=>video.play().catch(label);
+ video.playsInline=true;
+ video.autoplay=true;
+ video.setAttribute('muted','');
+ video.setAttribute('playsinline','');
+ video.setAttribute('webkit-playsinline','');
+ const source=matchMedia('(max-width: 760px)').matches?'/assets/hero-escritorio-mobile.mp4':'/assets/hero-escritorio.mp4';
+ if(video.getAttribute('src')!==source){video.src=source;video.load();}
+ const label=()=>{
+  const paused=video.paused;
+  button.querySelector('[data-video-label]').textContent=paused?'Reproduzir vídeo':'Pausar vídeo';
+  button.querySelector('[data-video-glyph]').setAttribute('d',paused?'M8 5v14l11-7z':'M7 5h3v14H7zM14 5h3v14h-3z');
+  button.setAttribute('aria-label',paused?'Reproduzir vídeo de fundo':'Pausar vídeo de fundo');
+  button.title=paused?'Reproduzir vídeo':'Pausar vídeo';
+ };
+ const play=()=>{
+  if(userPaused||!inView||document.hidden||pendingPlay)return;
+  // Muted inline playback is requested on entry and again when media is ready.
+  // Browser power/data restrictions may still require the first interaction.
+  video.muted=true;
+  pendingPlay=video.play();
+  pendingPlay?.catch(()=>{}).finally(()=>{pendingPlay=null;label();});
+ };
  video.addEventListener('playing',()=>{photo.classList.add('video-ready');label();});
  video.addEventListener('pause',label);
  video.addEventListener('error',()=>{photo.classList.remove('video-ready');label();});
+ ['loadeddata','canplay'].forEach(event=>video.addEventListener(event,play));
  button.addEventListener('click',()=>{if(video.paused){userPaused=false;play();}else{userPaused=true;video.pause();}});
- if('IntersectionObserver' in window)new IntersectionObserver(entries=>{inView=entries[0].isIntersecting;if(!inView)video.pause();else if(!userPaused&&!document.hidden)play();},{threshold:.01}).observe(hero);
- document.addEventListener('visibilitychange',()=>{if(document.hidden)video.pause();else if(inView&&!userPaused)play();});
- play();
+ if('IntersectionObserver' in window)new IntersectionObserver(entries=>{
+  inView=entries[0].isIntersecting;
+  if(!inView)video.pause();else play();
+ },{threshold:0}).observe(hero);
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)video.pause();else play();});
+ // A first touch anywhere retries only browser-blocked playback, never a user pause.
+ const retry=event=>{if(!event.target.closest('.hero-video-toggle')&&video.paused)play();};
+ document.addEventListener('pointerdown',retry,{passive:true});
+ document.addEventListener('touchend',retry,{passive:true});
+ document.addEventListener('click',retry,{passive:true});
+ addEventListener('pageshow',play);
+ label();play();
 })();

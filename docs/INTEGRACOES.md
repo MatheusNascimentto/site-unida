@@ -1,8 +1,8 @@
 # Integrações automáticas — estado atual
 
-As seções estão implementadas no frontend, com conteúdo de prévia explicitamente identificado. A sincronização automática **ainda não está conectada**. Não existe token de Instagram, OAuth de Google ou serviço de widget contratado neste projeto.
+As seções estão implementadas no frontend, com registros estáticos de fontes reais. Os avisos de protótipo foram removidos da interface a pedido do cliente em 21/10/2026. A sincronização automática **ainda não está conectada**. Não existe token de Instagram, OAuth de Google ou serviço de widget contratado neste projeto. Não apresentar esses registros como feed ao vivo ou três posts mais recentes.
 
-O endpoint `/api/social?source=instagram` ou `source=reviews` é uma função Vercel. Sem configuração retorna HTTP 503 com `status: unconfigured`, e o layout mantém a prévia identificada. O servidor local reproduz esse estado. Erros de serviço não são apresentados como atualizações bem-sucedidas.
+O endpoint `/api/social?source=instagram` ou `source=reviews` é uma função Vercel. Sem configuração retorna HTTP 503 com `status: unconfigured`, e o layout mantém os registros estáticos. O servidor local reproduz esse estado. Erros de serviço não são apresentados como atualizações bem-sucedidas.
 
 ## Conectar um provedor autorizado
 

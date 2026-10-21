@@ -8,7 +8,7 @@
 - Dados estruturados AccountingService, WebSite, WebPage/ContactPage/AboutPage e BreadcrumbList. Sem estrelas de avaliações próprias, números inventados ou horários não confirmados.
 - Sitemap das páginas institucionais; robots e meta robots controlados por configuração e ambiente.
 - Breadcrumbs visíveis, navegação interna e página 404. URLs antigas /fale-conosco/ e /faq/ têm redirecionamentos definidos. O restante das URLs antigas exige inventário antes da migração; não redirecionar todos os artigos para a home indiscriminadamente.
-- Dimensões explícitas nas imagens, lazy loading abaixo da dobra, vídeo sem preload automático. JS sem bibliotecas e sem dependência npm.
+- Dimensões explícitas nas imagens, lazy loading abaixo da dobra. Vídeo curto de fundo com preload automático e versão móvel leve para iniciar na entrada; vídeo institucional completo carrega por interação. JS sem bibliotecas e sem dependência npm.
 - Rotas Vercel estáticas e adaptador social isolado do navegador.
 
 ## Prévia e produção

@@ -10,6 +10,7 @@
     "dev": "node scripts/serve.mjs",
     "build": "node scripts/build.mjs",
     "check": "node scripts/check.mjs",
-    "check:consent": "node scripts/check-consent.mjs"
+    "check:consent": "node scripts/check-consent.mjs",
+    "check:video": "node scripts/check-video.mjs"
   }
 }
