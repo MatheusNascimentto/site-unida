@@ -53,7 +53,7 @@ O documento `docs/SEO-E-MEDICAO.md` explica detalhes e pendências. SEO não gar
 
 ## Conteúdo e integrações
 
-O vídeo é o MP4 original recuperado do site antigo. A capa usa a fachada enquanto não se escolhe um frame. Revisar o conteúdo antigo e produzir legendas antes da publicação. O símbolo circular e a assinatura UNIDA enviados pelo cliente estão reunidos em um SVG que incorpora os arquivos originais. Não é uma vetorização; um arquivo oficial em vetor poderá substituí-lo futuramente.
+O vídeo é o MP4 original recuperado do site antigo. A capa usa a fachada enquanto não se escolhe um frame. Revisar o conteúdo antigo e produzir legendas antes da publicação. O símbolo circular e o nome UNIDA são vetores obtidos da arte enviada. A assinatura pequena é texto HTML para manter a nitidez. A fonte Poppins é fornecida localmente, com licença OFL em assets/fonts.
 
 Fotos do Instagram são registros reais usados para a prévia; não representam os três últimos posts. Avaliações são recortes de consulta pública com fonte e data de prévia. **Instagram e Google ainda não atualizam automaticamente** sem conectar os provedores. Ver `docs/INTEGRACOES.md`.
 

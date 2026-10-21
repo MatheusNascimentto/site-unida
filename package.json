@@ -3,6 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "engines": {"node": ">=22"},
-  "scripts": {"dev": "node scripts/serve.mjs", "build": "node scripts/build.mjs", "check": "node scripts/check.mjs"}
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "build": "node scripts/build.mjs",
+    "check": "node scripts/check.mjs",
+    "check:consent": "node scripts/check-consent.mjs"
+  }
 }

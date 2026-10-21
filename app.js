@@ -189,40 +189,66 @@
     if (detail.open) animate($('.service-answer', detail) || $('p', detail), [{ opacity: .1, transform: 'translateY(-4px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 240 });
   }));
 
-  // GA4 is off until a real ID and explicit visitor consent are configured.
+  // Analytics is optional. No GA request occurs before an informed opt-in.
   let analyticsReady = false;
   const validGA = typeof cfg.ga4MeasurementId === 'string' && /^G-[A-Z0-9]+$/.test(cfg.ga4MeasurementId);
+  const consentKey = 'unida-cookie-choice-v1';
+  function analyticsConsent() {
+    try {
+      const choice = JSON.parse(stored(consentKey) || 'null');
+      return choice && choice.measurementId === cfg.ga4MeasurementId && choice.expiresAt > Date.now() && ['granted','denied'].includes(choice.analytics) ? choice.analytics : null;
+    } catch { return null; }
+  }
   function track(name, parameters = {}) {
-    if (!analyticsReady || stored('unida-analytics-consent') !== 'granted') return;
+    if (!analyticsReady || analyticsConsent() !== 'granted') return;
     window.gtag('event', name, { page_path: location.pathname, ...parameters });
   }
   function analyticsStart() {
-    if (!validGA || analyticsReady || stored('unida-analytics-consent') !== 'granted') return;
+    if (!validGA || analyticsReady || analyticsConsent() !== 'granted') return;
     window.dataLayer = window.dataLayer || [];
     window['ga-disable-' + cfg.ga4MeasurementId] = false;
     window.gtag = function () { window.dataLayer.push(arguments); };
     const pageLocation = new URL(location.origin + location.pathname);
     const query = new URLSearchParams(location.search);
-    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_id', 'utm_content', 'utm_term'].forEach(key => { if (query.has(key)) pageLocation.searchParams.set(key, query.get(key).slice(0, 120)); });
+    ['utm_source','utm_medium','utm_campaign','utm_id','utm_content','utm_term'].forEach(key => { if (query.has(key)) pageLocation.searchParams.set(key, query.get(key).slice(0,120)); });
     window.gtag('js', new Date());
     window.gtag('config', cfg.ga4MeasurementId, { page_location: pageLocation.href, page_title: document.title, allow_google_signals: false, allow_ad_personalization_signals: false });
-    const script = document.createElement('script'); script.async = true; script.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(cfg.ga4MeasurementId); document.head.append(script);
+    if (!$('script[data-unida-analytics]')) {
+      const script = document.createElement('script'); script.async = true; script.dataset.unidaAnalytics = 'true'; script.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(cfg.ga4MeasurementId); document.head.append(script);
+    }
     analyticsReady = true;
   }
+  function analyticsStop() {
+    if (!validGA) return;
+    window['ga-disable-' + cfg.ga4MeasurementId] = true;
+    analyticsReady = false;
+    const parts = location.hostname.split('.');
+    const domains = [null, ...parts.map((_,i) => parts.slice(i).join('.')).filter(domain => domain.includes('.') && !['vercel.app','com.br','net.br','org.br'].includes(domain))];
+    document.cookie.split(';').map(cookie => cookie.trim().split('=')[0]).filter(name => /^_ga(?:_|$)/.test(name)).forEach(name => {
+      domains.forEach(domain => { document.cookie = name + '=; Max-Age=0; path=/' + (domain ? '; domain=' + domain : '') + '; SameSite=Lax'; });
+    });
+  }
   function consentPrompt(force = false) {
-    if (!validGA || (!force && stored('unida-analytics-consent'))) return;
+    if (!validGA || (!force && analyticsConsent())) return;
     if ($('.consent-panel')) return;
-    const aside = document.createElement('aside'); aside.className = 'consent-panel'; aside.setAttribute('aria-labelledby', 'consent-title');
-    aside.innerHTML = '<h2 id="consent-title">Podemos medir a navegação?</h2><p>Com sua permissão, usamos o Google Analytics para entender quais páginas e contatos ajudam mais. A navegação funciona sem ele. <a href="/privacidade/">Saiba mais</a>.</p><div class="consent-actions"><button type="button" data-consent="denied">Continuar sem medição</button><button type="button" data-consent="granted">Permitir medição</button></div>';
+    const trigger = document.activeElement;
+    const aside = document.createElement('aside'); aside.className = 'consent-panel'; aside.setAttribute('aria-labelledby','consent-title');
+    aside.innerHTML = '<h2 id="consent-title">Sua escolha de cookies</h2><p>Podemos usar o Google Analytics para entender as páginas visitadas e os cliques nos contatos. A análise é opcional e começa apenas se você permitir. <a href="/privacidade/#cookies">Saiba mais</a>.</p><div class="consent-actions"><button type="button" data-consent="denied">Recusar análise</button><button type="button" data-consent="granted">Permitir análise</button></div>';
     document.body.append(aside);
-    $$('[data-consent]', aside).forEach(button => button.addEventListener('click', () => { save('unida-analytics-consent', button.dataset.consent); if (button.dataset.consent === 'granted') analyticsStart(); else if (analyticsReady) { window['ga-disable-' + cfg.ga4MeasurementId] = true; analyticsReady = false; } aside.remove(); }));
+    $$('[data-consent]',aside).forEach(button => button.addEventListener('click',() => {
+      const choice = button.dataset.consent;
+      save(consentKey,JSON.stringify({analytics:choice,measurementId:cfg.ga4MeasurementId,expiresAt:Date.now()+180*24*60*60*1000}));
+      if (choice === 'granted') analyticsStart(); else analyticsStop();
+      aside.remove(); if (force) trigger?.focus();
+    }));
+    if (force) $('[data-consent="denied"]',aside).focus();
   }
   analyticsStart(); consentPrompt();
-  $$('[data-consent-reset]').forEach(button => button.addEventListener('click', () => consentPrompt(true)));
-  if (!validGA) {
-    $$('[data-consent-reset]').forEach(button => { button.disabled = true; button.textContent = 'Medição não ativada nesta versão'; });
-    const info = $('[data-analytics-info]'); if (info) info.textContent = 'Nenhum identificador do Google Analytics foi configurado. O rastreador não é carregado.';
-  }
+  $$('[data-consent-reset]').forEach(button => { button.hidden = !validGA; button.addEventListener('click',() => consentPrompt(true)); });
+  const settings = $('[data-analytics-settings]'); if (settings) settings.hidden = !validGA;
+  const info = $('[data-analytics-info]');
+  if (info) info.textContent = validGA ? 'A análise de navegação é opcional. Você pode permitir ou recusar o uso do Google Analytics sem perder o acesso ao site.' : 'A análise de navegação está desativada neste site. Você pode acessar as páginas e os contatos sem autorizar cookies opcionais.';
+
   document.addEventListener('click', event => {
     const link = event.target.closest('a[href]'); if (!link) return;
     const href = link.getAttribute('href') || '';
@@ -297,7 +323,7 @@
  if(!video||!button)return;
  let userPaused=false,inView=true;
  video.muted=true;
- const label=()=>{const paused=video.paused;button.querySelector('[data-video-label]').textContent=paused?'Reproduzir vídeo':'Pausar vídeo';button.firstElementChild.textContent=paused?'▶':'Ⅱ';button.setAttribute('aria-label',paused?'Reproduzir vídeo de fundo':'Pausar vídeo de fundo');};
+ const label=()=>{const paused=video.paused;button.querySelector('[data-video-label]').textContent=paused?'Reproduzir vídeo':'Pausar vídeo';button.firstElementChild.textContent=paused?'▶':'Ⅱ';button.setAttribute('aria-label',paused?'Reproduzir vídeo de fundo':'Pausar vídeo de fundo');button.title=paused?'Reproduzir vídeo':'Pausar vídeo';};
  const play=()=>video.play().catch(label);
  video.addEventListener('playing',()=>{photo.classList.add('video-ready');label();});
  video.addEventListener('pause',label);
