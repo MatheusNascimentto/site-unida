@@ -3,54 +3,33 @@
   const $ = (s, scope = document) => scope.querySelector(s);
   const $$ = (s, scope = document) => [...scope.querySelectorAll(s)];
   const cfg = window.UNIDA_CONFIG || {};
-  const mq = matchMedia('(prefers-reduced-motion: reduce)');
   const stored = key => { try { return localStorage.getItem(key); } catch { return null; } };
   const save = (key, value) => { try { localStorage.setItem(key, value); } catch {} };
-  const reduced = () => document.documentElement.classList.contains('motion-reduced');
+  // The approved design keeps motion active on all devices. Old UI preferences
+  // no longer disable it, and no recurring animation or scroll hijacking is used.
+  document.documentElement.classList.remove('motion-reduced');
+  document.documentElement.classList.add('motion-full');
+  const mobileMotion = matchMedia('(max-width: 760px)');
   const animations = new Set();
   function animate(el, frames, options = {}) {
-    if (!el || reduced() || !el.animate) return null;
+    if (!el?.animate) return null;
     const animation = el.animate(frames, { duration: 640, easing: 'cubic-bezier(.16,1,.3,1)', ...options });
     animations.add(animation);
     animation.finished.catch(() => {}).finally(() => animations.delete(animation));
     return animation;
   }
-  function resetMotion() {
-    animations.forEach(a => a.cancel()); animations.clear();
-    $$('.brand-arc path,.solution-thread path,.story-line').forEach(p => { p.style.strokeDashoffset = ''; });
-    const progress = $('.scroll-progress'); if (progress) progress.style.transform = 'scaleX(0)';
-    $$('.story-step').forEach(s => s.classList.add('is-active'));
-  }
-  const motionButton = $('.motion-toggle');
-  function applyMotionSetting() {
-    const preference = stored('unida-reduce-motion');
-    const manual = preference === 'true';
-    const full = preference === 'false';
-    const isReduced = manual || (!full && mq.matches);
-    document.documentElement.classList.toggle('motion-reduced', isReduced);
-    document.documentElement.classList.toggle('motion-full', full);
-    if (motionButton) {
-      motionButton.setAttribute('aria-pressed', String(isReduced));
-      motionButton.textContent = isReduced ? 'Ativar movimentos neste site' : 'Reduzir movimentos';
-      motionButton.title = !preference && mq.matches ? 'Movimento reduzido conforme seu sistema. Você pode ativar os efeitos apenas neste site.' : '';
-    }
-    if (reduced()) resetMotion();
-    else queueMicrotask(() => { activeStory = -1; onScroll(); });
-  }
-  applyMotionSetting();
-  mq.addEventListener('change', applyMotionSetting);
-  motionButton?.addEventListener('click', () => { save('unida-reduce-motion', String(!reduced())); applyMotionSetting(); });
-
-  // A single entrance sequence. Base content is visible even if animation fails.
   async function entrance() {
-    if (reduced()) return;
-    await Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 800))]);
-    if (reduced()) return;
-    $$('.hero-title .title-line > span').forEach((line, i) => animate(line, [{ transform: 'translateY(112%)', opacity: .1 }, { transform: 'translateY(0)', opacity: 1 }], { duration: 820, delay: i * 85, fill: 'backwards' }));
-    const facade = $('.hero .facade-frame');
-    animate(facade, [{ clipPath: 'inset(0 0 0 100% round 18px)', opacity: .35 }, { clipPath: 'inset(0 0 0 0 round 18px)', opacity: 1 }], { duration: 1000, delay: 140, fill: 'backwards' });
-    $$('.hero .brand-arc path,.contact-intro .brand-arc path,.solution-thread path').forEach((line, i) => animate(line, [{ strokeDasharray: '1', strokeDashoffset: '1' }, { strokeDasharray: '1', strokeDashoffset: '0' }], { duration: 1100, delay: 240 + i * 100, fill: 'backwards' }));
-    animate($('.hero-description'), [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 450, delay: 250, fill: 'backwards' });
+    await Promise.race([document.fonts.ready, new Promise(resolve => setTimeout(resolve, 650))]);
+    const small = mobileMotion.matches;
+    const photo = $('.hero-photo');
+    animate(photo, [{ opacity: .1, transform: `scale(${small ? 1.09 : 1.065})` }, { opacity: 1, transform: 'scale(1)' }], { duration: small ? 1550 : 1900, fill: 'backwards' });
+    animate($('.location-label'), [{ opacity: 0, transform: 'translateY(12px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 650, delay: 80, fill: 'backwards' });
+    animate($('.history-pill'), [{ opacity: 0, transform: 'translateY(18px) scale(.94)' }, { opacity: 1, transform: 'translateY(0) scale(1)' }], { duration: 800, delay: 150, fill: 'backwards' });
+    $$('.hero-title .title-line > span').forEach((line, i) => animate(line, [{ transform: 'translateY(110%)', opacity: .15 }, { transform: 'translateY(0)', opacity: 1 }], { duration: small ? 1000 : 1100, delay: 230 + i * 120, fill: 'backwards' }));
+    [$('.hero-description'), $('.hero-actions'), $('.panorama-caption'), $('.panorama-scroll')].forEach((el, i) => animate(el, [{ opacity: 0, transform: `translateY(${small ? 26 : 18}px)` }, { opacity: 1, transform: 'translateY(0)' }], { duration: 800, delay: 540 + i * 100, fill: 'backwards' }));
+    $$('.solution-thread path').forEach((line, i) => animate(line, [{ strokeDasharray: '1', strokeDashoffset: '1' }, { strokeDasharray: '1', strokeDashoffset: '0' }], { duration: 1100, delay: 250 + i * 100, fill: 'backwards' }));
+    // A finite cue introduces scrolling without an endless decorative loop.
+    animate($('.scroll-cue'), [{ transform: 'translateY(-5px)', opacity: .35 }, { transform: 'translateY(7px)', opacity: 1 }, { transform: 'translateY(0)', opacity: .7 }], { duration: 1600, delay: 900 });
   }
   entrance();
   const reveals = $$('[data-reveal]');
@@ -59,34 +38,68 @@
       entries.forEach(({ target, isIntersecting }) => {
         if (!isIntersecting) return;
         observer.unobserve(target);
+        const small = mobileMotion.matches;
+        const siblings = [...target.parentElement.children].filter(el => el.hasAttribute('data-reveal'));
+        // Mobile cards enter individually; desktop neighbors form a short sequence.
+        const delay = small ? 0 : Math.min(siblings.indexOf(target), 3) * 90;
         if (target.matches('figure,.video-cover')) {
-          animate(target, [{ clipPath: 'inset(12% 0 0 0 round 18px)', opacity: .45 }, { clipPath: 'inset(0 0 0 0 round 18px)', opacity: 1 }], { duration: 700 });
-        } else animate(target, [{ opacity: .25, transform: 'translateY(18px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 550 });
+          const img = $('img', target);
+          animate(img, [{ transform: 'scale(1.075)' }, { transform: 'scale(1)' }], { duration: small ? 1100 : 1200, delay });
+          animate(target, [{ opacity: .25, transform: `translateY(${small ? 38 : 24}px)` }, { opacity: 1, transform: 'translateY(0)' }], { duration: 850, delay });
+        } else {
+          animate(target, [{ opacity: .12, transform: `translateY(${small ? 42 : 28}px)` }, { opacity: 1, transform: 'translateY(0)' }], { duration: small ? 900 : 800, delay });
+        }
+        target.dataset.motionEntered = 'true';
       });
-    }, { threshold: .12 });
+    }, { threshold: .12, rootMargin: '0px 0px -24px 0px' });
     reveals.forEach(el => observer.observe(el));
   }
   let scrollPending = false, activeStory = -1;
   const story = $('.story-scroll'), steps = $$('.story-step'), words = ['Ouvir.', 'Explicar.', 'Acompanhar.'];
-  const progressLine = $('.scroll-progress');
+  const progressLine = $('.scroll-progress'), hero = $('.hero-panorama'), drift = $('.hero-photo-drift');
+  const mobileStage = $('.story-mobile-stage');
   function onScroll() {
     scrollPending = false;
-    if (reduced()) return;
     const total = document.documentElement.scrollHeight - innerHeight;
     if (progressLine) progressLine.style.transform = `scaleX(${total > 0 ? Math.min(1, scrollY / total) : 0})`;
+    if (hero && drift) {
+      const rect = hero.getBoundingClientRect();
+      if (rect.bottom > 0 && rect.top < innerHeight) {
+        const distance = Math.max(0, -rect.top);
+        const y = Math.min(mobileMotion.matches ? 48 : 100, distance * (mobileMotion.matches ? .1 : .16));
+        drift.style.transform = `translate3d(0,${y}px,0)`;
+      }
+    }
     if (!story || !steps.length) return;
-    const at = steps.reduce((best, step, i) => Math.abs(step.getBoundingClientRect().top + step.offsetHeight / 2 - innerHeight * .55) < best.distance ? { index: i, distance: Math.abs(step.getBoundingClientRect().top + step.offsetHeight / 2 - innerHeight * .55) } : best, { index: 0, distance: Infinity }).index;
+    const at = steps.reduce((best, step, i) => {
+      const r = step.getBoundingClientRect();
+      const distance = Math.abs(r.top + r.height / 2 - innerHeight * .58);
+      return distance < best.distance ? { index: i, distance } : best;
+    }, { index: 0, distance: Infinity }).index;
     if (at !== activeStory) {
       activeStory = at;
       steps.forEach((step, i) => step.classList.toggle('is-active', i === at));
-      const word = $('.story-word'); if (word) { word.textContent = words[at]; animate(word, [{ opacity: .1 }, { opacity: 1 }], { duration: 300 }); }
+      const word = $('.story-word');
+      if (word) { word.textContent = words[at]; animate(word, [{ opacity: .15 }, { opacity: 1 }], { duration: 350 }); }
+      if (mobileStage) {
+        $('.story-mobile-count', mobileStage).textContent = `0${at + 1} / 03`;
+        const label = $('.story-mobile-word', mobileStage); label.textContent = words[at];
+        animate(label, [{ opacity: .1, transform: 'translateY(9px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 450 });
+        $$('.story-mobile-track i', mobileStage).forEach((el, i) => el.classList.toggle('is-active', i <= at));
+      }
     }
+    steps.forEach(step => {
+      const r = step.getBoundingClientRect();
+      const progress = Math.max(0, Math.min(1, (innerHeight * .82 - r.top) / Math.max(1, r.height)));
+      step.style.setProperty('--step-progress', progress);
+    });
     const rect = story.getBoundingClientRect();
     const value = Math.max(0, Math.min(1, (innerHeight * .8 - rect.top) / Math.max(1, rect.height - innerHeight * .2)));
     const path = $('.story-line'); if (path) { path.style.strokeDasharray = '1'; path.style.strokeDashoffset = String(1 - value); }
   }
   addEventListener('scroll', () => { if (!scrollPending) { scrollPending = true; requestAnimationFrame(onScroll); } }, { passive: true });
   addEventListener('resize', onScroll, { passive: true }); onScroll();
+
 
   const menuButton = $('.menu-toggle'), menu = $('.mobile-menu');
   function closeMenu(returnFocus = true) {
@@ -127,7 +140,6 @@
     dialog.addEventListener('close', () => { document.body.classList.remove('modal-open'); trigger?.focus(); });
   }
   bindDialog($('.video-dialog'), '[data-video-open]', '[data-video-close]');
-  bindDialog($('.preview-dialog'), '[data-preview-open]', '[data-preview-close]');
   const videoDialog = $('.video-dialog'), video = $('video', videoDialog || document);
   videoDialog?.addEventListener('unida:open', () => { video?.play().catch(() => {}); track('video_open', { location: document.body.dataset.page }); });
   videoDialog?.addEventListener('close', () => video?.pause());

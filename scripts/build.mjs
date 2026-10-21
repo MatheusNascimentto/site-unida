@@ -15,7 +15,6 @@ for(const file of pages){let html=await readFile(path.join(root,file),'utf8');
  html=html.replace(/<head>[\s\S]*?<\/head>/,head=>head.replace(/https:\/\/unidasolucoes\.com\.br/g,url.origin));
  html=html.replace(/<meta name="google-site-verification" content="[^"]*">/g,'');
  if(config.searchConsoleVerification)html=html.replace('</head>',`<meta name="google-site-verification" content="${escape(config.searchConsoleVerification)}"></head>`);
- if(!config.showPrototypeNotice)html=html.replace(/<div class="prototype-bar">[\s\S]*?<\/div>/,'');
  const destination=path.join(publicRoot,file);await mkdir(path.dirname(destination),{recursive:true});await writeFile(destination,html);
 }
 for(const file of ['styles.css','app.js'])await cp(path.join(root,file),path.join(publicRoot,file));
